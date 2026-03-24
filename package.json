@@ -6,7 +6,7 @@
   "scripts": {
     "Regressiontest": "npx playwright test",
     "APITest": "npx playwright test --grep @ui",
-    "bdd": "npx cucumber-js --require src/steps/**/*.ts --require src/support/**/*.ts",
+    "bdd": "npx cucumber-js feature/E2EOrderJourney.feature ",
     "allure:generate": "allure generate allure-results --clean",
     "allure:open": "allure open"
   },

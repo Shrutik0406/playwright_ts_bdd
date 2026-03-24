@@ -7,3 +7,4 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 .env/
+#npx cucumber-js feature/E2EOrderJourney.feature
