@@ -1,0 +1,37 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+# 1️⃣ Install NodeJS
+- task: NodeTool@0
+  inputs:
+    versionSpec: '18.x'
+  displayName: 'Install Node.js'
+
+# 2️⃣ Install dependencies & Playwright browsers
+- script: |
+    npm ci
+    npx playwright install --with-deps
+  displayName: 'Install Dependencies & Browsers'
+
+# 3️⃣ Run global setup to generate auth.json
+- script: |
+    npx playwright test --config=playwright.config.ts --reporter=line --global-setup=./global-setup.ts
+  displayName: 'Run Global Setup (Login Once)'
+
+# 4️⃣ Run Playwright tests in parallel
+- script: |
+    npx playwright test --workers=4
+  displayName: 'Run Playwright Tests (Parallel Execution)'
+
+# 5️⃣ Publish Playwright HTML Report to Azure Artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'playwright-report'
+    ArtifactName: 'playwright-report'
+  condition: always()
+  displayName: 'Publish Playwright HTML Report'

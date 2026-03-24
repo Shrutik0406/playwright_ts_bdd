@@ -1,0 +1,150 @@
+# # name: Playwright Tests
+# # on:
+# #   push:
+# #     branches: [ main, master ]
+# #   pull_request:
+# #     branches: [ main, master ]
+# # jobs:
+# #   test:
+# #     timeout-minutes: 60
+# #     runs-on: ubuntu-latest
+# #     steps:
+# #     - uses: actions/checkout@v4
+# #     - uses: actions/setup-node@v4
+# #       with:
+# #         node-version: lts/*
+# #     - name: Install dependencies
+# #       run: npm ci
+# #     - name: Install Playwright Browsers
+# #       run: npx playwright install --with-deps
+# #     - name: Run Playwright tests
+# #       run: npx playwright test
+# #     - uses: actions/upload-artifact@v4
+# #       if: ${{ !cancelled() }}
+# #       with:
+# #         name: playwright-report
+# #         path: playwright-report/
+# #         retention-days: 30
+
+# name: Playwright Tests
+
+# on:
+#   push:
+#   pull_request:
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         worker: [1, 2, 3, 4]   # 4 parallel workers
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 18
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Install Playwright Browsers
+#         run: npx playwright install --with-deps
+
+#       - name: Run tests
+#         run: npx playwright test --workers=4
+
+#       - name: Upload HTML Report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: playwright-report
+#           path: playwright-report
+
+
+name: Playwright BDD Multi-Agent Multi-Browser Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  bdd-tests:
+    runs-on: ubuntu-latest
+
+    # ⭐ MULTI-AGENT + MULTI-BROWSER EXECUTION
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]      # 3 Browsers → 3 AGENTS
+        shard_index: [1, 2]                       # 2 Splits → 2 AGENTS per browser
+
+    env:
+      BROWSER: ${{ matrix.browser }}
+      SHARD_INDEX: ${{ matrix.shard_index }}
+      TOTAL_SHARDS: 2
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    # 👉 Run Cucumber tests for each agent (browser + shard combo)
+    - name: Run BDD Tests (Parallel Shards + Multi-Browser)
+      run: |
+        echo "Running Browser: $BROWSER | Shard: $SHARD_INDEX of $TOTAL_SHARDS"
+        npx cucumber-js \
+          --require-module ts-node/register \
+          --format @cucumber/pretty-formatter \
+          --format json:reports/cucumber-${{ matrix.browser }}-${{ matrix.shard_index }}.json \
+          --format allure-cucumberjs-native \
+          --tags "not @skip"
+
+    # Collect Allure Results for each agent
+    - name: Upload Allure Shard Result
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-${{ matrix.browser }}-${{ matrix.shard_index }}
+        path: allure-results
+
+  # ⭐ FINAL JOB — MERGE ALLURE RESULTS FROM ALL AGENTS
+  merge-allure:
+    needs: bdd-tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Allure Results from all Agents
+      uses: actions/download-artifact@v4
+      with:
+        path: merged-allure-results
+
+    - name: Install Allure
+      run: npm install -g allure-commandline
+
+    - name: Generate Final Allure Report
+      run: |
+        allure generate merged-allure-results --clean -o allure-report
+
+    - name: Upload Final Allure Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: Final-Allure-Report
+        path: allure-report

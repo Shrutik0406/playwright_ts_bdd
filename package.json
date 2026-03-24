@@ -1,0 +1,30 @@
+{
+  "name": "playwright_ts_bdd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "Regressiontest": "npx playwright test",
+    "APITest": "npx playwright test --grep @ui",
+    "bdd": "npx cucumber-js --require src/steps/**/*.ts --require src/support/**/*.ts --format @cucumber/pretty-formatter --format json:reports/cucumber.json --format allure-cucumberjs-native",
+    "allure:generate": "allure generate allure-results --clean",
+    "allure:open": "allure open"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.7.0",
+    "@cucumber/pretty-formatter": "^3.2.0",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
+    "allure-commandline": "^2.38.1",
+    "playwright": "^1.58.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
+}
